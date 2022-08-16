@@ -1,0 +1,101 @@
+name: Build agents
+
+on:
+  schedule:
+    - cron:  '44 21 */2 * *'
+
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: check for new release
+    runs-on: ubuntu-latest
+    outputs:
+      last-release-name: ${{ steps.release.outputs.last-release-name }}
+      last-release-date: ${{ steps.release.outputs.last-release-date }}
+      previous-release-date: ${{ steps.previous.outputs.previous-release-date }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: When was the last release?
+        id: release
+        run: |
+            REPO=amidaware/rmmagent
+            LAST_RELEASE=$(curl -s https://api.github.com/repos/$REPO/releases | jq -r '.[0]')
+            LAST_RELEASE_NAME=$(echo $LAST_RELEASE | jq -r '.name')
+            LAST_RELEASE_DATE=$(echo $LAST_RELEASE | jq -r '.published_at')
+            
+            echo "::set-output name=last-release-name::$(echo $LAST_RELEASE_NAME)"
+            echo "::set-output name=last-release-date::$(echo $LAST_RELEASE_DATE)"
+            
+      - name: make previous last-release-date available
+        id: previous
+        env:
+          PREV: ${{ secrets.TRMM_AGENT_LAST_RELEASE_DATE }}
+        run: |            
+            echo "::set-output name=previous-release-date::$(echo $PREV)"
+
+
+  build:
+    needs: check
+    if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date
+    runs-on: ubuntu-latest
+    steps:
+    
+    # use secrets of this repo for persistant storage between worklows
+      - name: Set new last release date as secret
+        uses: hmanzur/actions-set-secret@v2.0.0
+        with:
+         name: 'TRMM_AGENT_LAST_RELEASE_DATE'
+         value: ${{ needs.check.outputs.last-release-date }}
+         token: ${{ secrets.REPO_ACCESS_TOKEN }}
+    
+    
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.18.0'
+
+      - name: Clone RMM Agent Repository
+        uses: actions/checkout@v3
+        with:
+          repository: amidaware/rmmagent
+
+      - name: Build ARM64
+        run: go build -o release/rmmAgent_linux_arm64.go -ldflags "-s -w"
+        env:
+          CGO_ENABLED: "0"
+          GOARCH: arm64
+          GOOS: linux
+          
+      - name: Build ARM32
+        run: go build -o release/rmmAgent_linux_arm32.go -ldflags "-s -w"
+        env:
+          CGO_ENABLED: "0"
+          GOARCH: arm
+          GOARM: "7"
+          GOOS: linux          
+          
+      - name: Build x64
+        run: go build -o release/rmmAgent_linux_amd64.go -ldflags "-s -w"
+        env:
+          CGO_ENABLED: "0"
+          GOARCH: amd64
+          GOOS: linux
+          
+      - name: release Agent builds
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          replacesArtifacts: true
+          removeArtifacts: true
+          name: "Linux Agents"
+          commit: main
+          tag: latest
+          artifacts: "release/*.go"
+          body: | 
+            ${{ needs.check.outputs.last-release-name }}
+            released on: ${{ needs.check.outputs.last-release-date }}
+          token: ${{ secrets.GITHUB_TOKEN }}
