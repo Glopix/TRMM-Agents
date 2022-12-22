@@ -45,6 +45,11 @@ jobs:
       matrix:
         arch: [amd64, arm64, arm]
         os: [linux, windows, freebsd, android, openbsd, darwin, ios]
+        exclude:
+          - arch: arm
+            os: darwin
+          - arch: arm
+            os: ios
     steps:
   
     # use secrets of this repo for persistant storage between worklows
