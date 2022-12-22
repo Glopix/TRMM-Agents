@@ -62,27 +62,13 @@ jobs:
         with:
           repository: amidaware/rmmagent
 
-      - name: Build ARM64
-        run: go build -o release/rmmAgent_linux_arm64.go -ldflags "-s -w"
-        env:
-          CGO_ENABLED: "0"
-          GOARCH: arm64
-          GOOS: linux
-          
-      - name: Build ARM32
-        run: go build -o release/rmmAgent_linux_arm32.go -ldflags "-s -w"
-        env:
-          CGO_ENABLED: "0"
-          GOARCH: arm
-          GOARM: "7"
-          GOOS: linux          
-          
-      - name: Build x64
-        run: go build -o release/rmmAgent_linux_amd64.go -ldflags "-s -w"
-        env:
-          CGO_ENABLED: "0"
-          GOARCH: amd64
-          GOOS: linux
+      - name: Generate build files
+        uses: thatisuday/go-cross-build@v1
+        with:
+            platforms: 'linux/amd64, darwin/amd64, windows/amd64'
+            #package: 'demo'
+            name: 'rmmAgent'
+            dest: 'release'
           
       - name: release Agent builds
         uses: ncipollo/release-action@v1
