@@ -58,7 +58,7 @@ jobs:
   
     # use secrets of this repo for persistant storage between worklows
       - name: Set new last release date as secret
-        uses: hmanzur/actions-set-secret@v2
+        uses: hmanzur/actions-set-secret@v2.0.0
         with:
          name: 'TRMM_AGENT_LAST_RELEASE_DATE'
          value: ${{ needs.check.outputs.last-release-date }}
