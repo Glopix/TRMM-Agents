@@ -50,11 +50,15 @@ jobs:
             os: darwin
           - arch: arm
             os: ios
+          - arch: arm
+            os: windows
+          - arch: arm64
+            os: windows
     steps:
   
     # use secrets of this repo for persistant storage between worklows
       - name: Set new last release date as secret
-        uses: hmanzur/actions-set-secret@v2.0.0
+        uses: hmanzur/actions-set-secret@master
         with:
          name: 'TRMM_AGENT_LAST_RELEASE_DATE'
          value: ${{ needs.check.outputs.last-release-date }}
@@ -79,7 +83,7 @@ jobs:
           GOOS: ${{ matrix.os }}
           
       - name: release Agent builds
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@master
         with:
           allowUpdates: true
           replacesArtifacts: true
