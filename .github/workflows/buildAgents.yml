@@ -41,19 +41,8 @@ jobs:
     needs: check
     #if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [amd64, arm64, arm]
-        os: [linux, windows, freebsd, android, darwin]
-        exclude:
-          - arch: arm
-            os: darwin
-          - arch: arm
-            os: windows
-          - arch: arm64
-            os: windows
     steps:
-  
+    
     # use secrets of this repo for persistant storage between worklows
       - name: Set new last release date as secret
         uses: hmanzur/actions-set-secret@v2.0.0
@@ -61,27 +50,25 @@ jobs:
          name: 'TRMM_AGENT_LAST_RELEASE_DATE'
          value: ${{ needs.check.outputs.last-release-date }}
          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-    
-    
-      - name: Set up Go
-        uses: actions/setup-go@main
-        with:
-          go-version: '>=1.18.0'
 
       - name: Clone RMM Agent Repository
         uses: actions/checkout@v3
         with:
           repository: amidaware/rmmagent
 
-      - name: build Binaries
-        run: go build -o release/rmmAgent_${{ matrix.os }}_${{ matrix.arch }} -ldflags "-s -w"
+      - name: Generate build files
+        uses: thatisuday/go-cross-build@v1.0.2 
+        with:
+            platforms: 'linux/amd64, linux/arm, linux/arm64, freebsd/amd64, freebsd/arm, freebsd/arm64, netbsd/amd64, netbsd/arm, netbsd/arm64, openbsd/amd64, openbsd/arm, openbsd/arm64, ios/arm64, ios/amd64, darwin/amd64, darwin/arm64'
+            #package: 'demo'
+            name: 'rmmAgent'
+            dest: 'release'
+            ldflags: '-s -w'
         env:
           CGO_ENABLED: "0"
-          GOARCH: ${{ matrix.arch }}
-          GOOS: ${{ matrix.os }}
           
       - name: release Agent builds
-        uses: ncipollo/release-action@main
+        uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           replacesArtifacts: true
