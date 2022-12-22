@@ -44,12 +44,10 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64, arm]
-        os: [linux, windows, freebsd, android, openbsd, darwin, ios]
+        os: [linux, windows, freebsd, android, darwin]
         exclude:
           - arch: arm
             os: darwin
-          - arch: arm
-            os: ios
           - arch: arm
             os: windows
           - arch: arm64
