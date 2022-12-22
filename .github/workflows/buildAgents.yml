@@ -63,7 +63,7 @@ jobs:
             #package: 'demo'
             name: 'rmmAgent'
             dest: 'release'
-            ldflags: '-s -w'
+            ldflags: "'-s -w'"
             buildmode: ''
         env:
           CGO_ENABLED: "0"
