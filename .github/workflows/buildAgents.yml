@@ -29,8 +29,6 @@ jobs:
             
             echo "last-release-name=$LAST_RELEASE_NAME" >> $GITHUB_OUTPUT
             echo "last-release-date=$LAST_RELEASE_DATE" >> $GITHUB_OUTPUT
-            #echo "::set-output name=last-release-name::$(echo $LAST_RELEASE_NAME)"
-            #echo "::set-output name=last-release-date::$(echo $LAST_RELEASE_DATE)"
             
       - name: make previous last-release-date available
         id: previous
@@ -38,8 +36,6 @@ jobs:
           PREV: ${{ secrets.TRMM_AGENT_LAST_RELEASE_DATE }}
         run: |            
             echo "previous-release-date=$PREV" >> $GITHUB_OUTPUT
-            #echo "::set-output name=previous-release-date::$(echo $PREV)"
-
 
   build:
     needs: check
