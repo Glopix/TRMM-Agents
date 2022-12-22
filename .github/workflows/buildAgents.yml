@@ -10,10 +10,6 @@ jobs:
   check:
     name: check for new release
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [amd64, arm64, arm]
-        os: [linux, windows, freebsd, android, openbsd, darwin, ios]
     outputs:
       last-release-name: ${{ steps.release.outputs.last-release-name }}
       last-release-date: ${{ steps.release.outputs.last-release-date }}
@@ -45,8 +41,12 @@ jobs:
     needs: check
     #if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64, arm]
+        os: [linux, windows, freebsd, android, openbsd, darwin, ios]
     steps:
-    
+  
     # use secrets of this repo for persistant storage between worklows
       - name: Set new last release date as secret
         uses: hmanzur/actions-set-secret@v2.0.0
