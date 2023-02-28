@@ -45,7 +45,7 @@ jobs:
     
     # use secrets of this repo for persistant storage between worklows
       - name: Set new last release date as secret
-        uses: texas-mcallen-mission/actions-secret-modifier@v2.0.0
+        uses: texas-mcallen-mission/actions-secret-modifier@master
         with:
          name: 'TRMM_AGENT_LAST_RELEASE_DATE'
          value: ${{ needs.check.outputs.last-release-date }}
