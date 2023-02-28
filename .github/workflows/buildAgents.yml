@@ -39,7 +39,7 @@ jobs:
 
   build:
     needs: check
-    #if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date
+    if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date
     runs-on: ubuntu-latest
     steps:
     
