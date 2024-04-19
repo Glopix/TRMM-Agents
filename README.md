@@ -1,6 +1,6 @@
 # TacticalRMM-Agent for Linux
 Checks [amidaware/rmmagent](https://github.com/amidaware/rmmagent) every 2 days and builds new agent binaries for Linux if there was an update.  
-See [Releases](https://github.com/Glopix/TacticalRMM-Agent/releases)  
+See [Releases](https://github.com/Glopix/TRMM-Agents/releases/)  
 
 ## Installation
 To install the agent on linux you can use:  
