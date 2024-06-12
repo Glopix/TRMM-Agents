@@ -42,21 +42,11 @@ jobs:
     if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date
     runs-on: ubuntu-latest
     steps:
-    
-    # use secrets of this repo for persistant storage between worklows
-      - name: Set new last release date as secret
-        uses: texas-mcallen-mission/actions-secret-modifier@v2.0.4.2
-        with:
-         name: 'TRMM_AGENT_LAST_RELEASE_DATE'
-         value: ${{ needs.check.outputs.last-release-date }}
-         token: ${{ secrets.REPO_ACCESS_TOKEN }}
-
       - name: Clone RMM Agent Repository
         uses: actions/checkout@v3
         with:
           repository: amidaware/rmmagent
-          
-          
+        
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -96,5 +86,13 @@ jobs:
           artifacts: "release/*.go"
           body: | 
             ${{ needs.check.outputs.last-release-name }}
+
+      # use secrets of this repo for persistant storage between worklows
+      - name: Set new last release date as secret
+        uses: texas-mcallen-mission/actions-secret-modifier@v2.0.4.2
+        with:
+         name: 'TRMM_AGENT_LAST_RELEASE_DATE'
+         value: ${{ needs.check.outputs.last-release-date }}
+         token: ${{ secrets.REPO_ACCESS_TOKEN }}
             released on: ${{ needs.check.outputs.last-release-date }}
           token: ${{ secrets.GITHUB_TOKEN }}
