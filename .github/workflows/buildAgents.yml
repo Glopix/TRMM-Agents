@@ -94,5 +94,4 @@ jobs:
          name: 'TRMM_AGENT_LAST_RELEASE_DATE'
          value: ${{ needs.check.outputs.last-release-date }}
          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-            released on: ${{ needs.check.outputs.last-release-date }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+
