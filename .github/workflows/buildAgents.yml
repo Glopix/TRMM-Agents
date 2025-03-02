@@ -3,8 +3,16 @@ name: Build agents
 on:
   schedule:
     - cron:  '44 21 */2 * *'
-
   workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force build'
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - "no"
+          - "yes"
 
 jobs:
   check:
@@ -39,16 +47,16 @@ jobs:
 
   build:
     needs: check
-    if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date
+    if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date || github.event.inputs.force_build == 'yes'
     runs-on: ubuntu-latest
     steps:
       - name: Clone RMM Agent Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: amidaware/rmmagent
         
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: '>=1.18.0'
 
