@@ -1,4 +1,4 @@
-name: Build agents
+name: Build TRMM agents
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
     inputs:
       force_build:
         description: 'Force build'
-        required: true
+        required: false
         default: 'no'
         type: choice
         options:
@@ -20,61 +20,87 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       last-release-name: ${{ steps.release.outputs.last-release-name }}
+      last-release-tag: ${{ steps.release.outputs.last-release-tag }}
       last-release-date: ${{ steps.release.outputs.last-release-date }}
-      previous-release-date: ${{ steps.previous.outputs.previous-release-date }}
+      saved-release-date: ${{ steps.saved.outputs.saved-release-date }}
+      saved-bin-build-date: ${{ steps.saved.outputs.saved-bin-build-date }}
       
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        
-      - name: When was the last release?
+        uses: actions/checkout@v5
+
+      - name: Read previously saved release and agent bin build date
+        id: saved
+        run: |
+          if [ -f "./gh-workflow_release-date.txt" ]; then
+            SAVED_RELEASE_DATE=$(cat ./gh-workflow_release-date.txt)
+          else
+            SAVED_RELEASE_DATE="none"
+          fi
+          echo "saved-release-date=$SAVED_RELEASE_DATE" >> "$GITHUB_OUTPUT"
+
+          if [ -f "./gh-workflow_bin-build-date.txt" ]; then
+            SAVED_BIN_BUILD_DATE=$(cat ./gh-workflow_bin-build-date.txt)
+          else
+            SAVED_BIN_BUILD_DATE="none"
+          fi
+          echo "saved-bin-build-date=$SAVED_BIN_BUILD_DATE" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch latest release info
         id: release
         run: |
-            REPO=amidaware/rmmagent
-            LAST_RELEASE=$(curl -s https://api.github.com/repos/$REPO/releases | jq -r '.[0]')
-            LAST_RELEASE_NAME=$(echo $LAST_RELEASE | jq -r '.name')
-            LAST_RELEASE_DATE=$(echo $LAST_RELEASE | jq -r '.published_at')
+          REPO="amidaware/rmmagent"
+          RELEASE_JSON=$(curl -s "https://api.github.com/repos/$REPO/releases/latest")
+
+          LAST_RELEASE_NAME=$(jq -r '.name' <<< "$RELEASE_JSON")
+          LAST_RELEASE_TAG=$(jq -r '.tag_name' <<< "$RELEASE_JSON")
+          LAST_RELEASE_DATE=$(jq -r '.published_at' <<< "$RELEASE_JSON")
+
+          echo "last-release-name=$LAST_RELEASE_NAME" >> "$GITHUB_OUTPUT"
+          echo "last-release-tag=$LAST_RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "last-release-date=$LAST_RELEASE_DATE" >> "$GITHUB_OUTPUT"
             
-            echo "last-release-name=$LAST_RELEASE_NAME" >> $GITHUB_OUTPUT
-            echo "last-release-date=$LAST_RELEASE_DATE" >> $GITHUB_OUTPUT
-            
-      - name: make previous last-release-date available
-        id: previous
-        env:
-          PREV: ${{ secrets.TRMM_AGENT_LAST_RELEASE_DATE }}
-        run: |            
-            echo "previous-release-date=$PREV" >> $GITHUB_OUTPUT
 
   build:
     needs: check
-    if: needs.check.outputs.last-release-date != needs.check.outputs.previous-release-date || github.event.inputs.force_build == 'yes'
+    if: |
+      needs.check.outputs.last-release-date != needs.check.outputs.saved-release-date || 
+      github.event.inputs.force_build == 'yes'
     runs-on: ubuntu-latest
     steps:
       - name: Clone RMM Agent Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: amidaware/rmmagent
         
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '>=1.18.0'
+          go-version: '>=1.18.0' 
 
-      - name: Build ARM64
+      - name: Build ARM32 v6
+        run: go build -o release/rmmAgent_linux_arm32v6.go -ldflags "-s -w"
+        env:
+          CGO_ENABLED: "0"
+          GOARCH: arm
+          GOARM: "6"
+          GOOS: linux
+
+      - name: Build ARM32 v7
+        run: go build -o release/rmmAgent_linux_arm32v7.go -ldflags "-s -w"
+        env:
+          CGO_ENABLED: "0"
+          GOARCH: arm
+          GOARM: "7"
+          GOOS: linux
+
+      - name: Build ARM64 v8+
         run: go build -o release/rmmAgent_linux_arm64.go -ldflags "-s -w"
         env:
           CGO_ENABLED: "0"
           GOARCH: arm64
           GOOS: linux
-          
-      - name: Build ARM32
-        run: go build -o release/rmmAgent_linux_arm32.go -ldflags "-s -w"
-        env:
-          CGO_ENABLED: "0"
-          GOARCH: arm
-          GOARM: "7"
-          GOOS: linux          
-          
+
       - name: Build x64
         run: go build -o release/rmmAgent_linux_amd64.go -ldflags "-s -w"
         env:
@@ -87,8 +113,8 @@ jobs:
         with:
           allowUpdates: true
           replacesArtifacts: true
-          removeArtifacts: true
-          name: "Linux Agents"
+#          removeArtifacts: true
+          name: "Linux Agents ${{ needs.check.outputs.last-release-tag }}"
           commit: main
           tag: latest
           artifacts: "release/*.go"
@@ -102,4 +128,37 @@ jobs:
          name: 'TRMM_AGENT_LAST_RELEASE_DATE'
          value: ${{ needs.check.outputs.last-release-date }}
          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+
+
+  save-build-info:
+    name: save build info
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    if: needs.build.result == 'success' && needs.build.result != 'skipped'
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # added or changed files to the repository.
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: ${{ github.repository }}
+          ref: gh-workflows
+
+      - name: save last agent bin build date and release date to files
+        run: |
+            TODAY=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            echo "$TODAY" > ./gh-workflow_bin-build-date.txt
+            echo "${{ needs.check.outputs.last-release-date }}" > ./gh-workflow_release-date.txt
+
+      - name: Commit updated release data
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          branch: gh-workflows
+          file_pattern: 'gh-workflow_*.txt'
+          commit_message: "Update stored release info"
+          commit_user_name: GitHub Actions Bot
+          commit_user_email: github-actions-bot@none.dom
+          commit_author: GitHub Actions Bot <github-actions-bot@none.dom>
+          create_branch: true
 
