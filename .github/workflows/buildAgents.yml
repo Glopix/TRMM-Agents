@@ -48,6 +48,7 @@ jobs:
             SAVED_BIN_BUILD_DATE="none"
           fi
           echo "saved-bin-build-date=$SAVED_BIN_BUILD_DATE" >> "$GITHUB_OUTPUT"
+          echo "SAVED_BIN_BUILD_DATE=$SAVED_BIN_BUILD_DATE" >> "$GITHUB_ENV"
 
       - name: Fetch latest release info
         id: release
@@ -64,11 +65,10 @@ jobs:
           echo "last-release-date=$LAST_RELEASE_DATE" >> "$GITHUB_OUTPUT"
             
       - id: days-since-build
-        name: get number of days since last image build
+        name: get number of days since last bin build
         run: |
           DAYS_SINCE_LAST_BIN_BUILD_DATE=$(( ( $(date +%s) - $(date -d "$SAVED_BIN_BUILD_DATE" +%s) )/(60*60*24) ))
           echo "days-since-last-bin-build=$DAYS_SINCE_LAST_BIN_BUILD_DATE" >> "$GITHUB_OUTPUT"
-          echo "$DAYS_SINCE_LAST_BIN_BUILD_DATE"
 
 
   build:
