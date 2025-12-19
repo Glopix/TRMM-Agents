@@ -68,6 +68,7 @@ jobs:
         run: |
           DAYS_SINCE_LAST_BIN_BUILD_DATE=$(( ( $(date +%s) - $(date -d "$SAVED_BIN_BUILD_DATE" +%s) )/(60*60*24) ))
           echo "days-since-last-bin-build=$DAYS_SINCE_LAST_BIN_BUILD_DATE" >> "$GITHUB_OUTPUT"
+          echo "$DAYS_SINCE_LAST_BIN_BUILD_DATE"
 
 
   build:
