@@ -24,6 +24,7 @@ jobs:
       last-release-date: ${{ steps.release.outputs.last-release-date }}
       saved-release-date: ${{ steps.saved.outputs.saved-release-date }}
       saved-bin-build-date: ${{ steps.saved.outputs.saved-bin-build-date }}
+      days-since-last-bin-build: ${{ steps.release.outputs.days-since-last-bin-build }}
       
     steps:
       - name: Checkout
@@ -62,11 +63,18 @@ jobs:
           echo "last-release-tag=$LAST_RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "last-release-date=$LAST_RELEASE_DATE" >> "$GITHUB_OUTPUT"
             
+      - id: days-since-build
+        name: get number of days since last image build
+        run: |
+          DAYS_SINCE_LAST_BIN_BUILD_DATE=$(( ( $(date +%s) - $(date -d "$SAVED_BIN_BUILD_DATE" +%s) )/(60*60*24) ))
+          echo "days-since-last-bin-build=$DAYS_SINCE_LAST_BIN_BUILD_DATE" >> "$GITHUB_OUTPUT"
+
 
   build:
     needs: check
     if: |
       needs.check.outputs.last-release-date != needs.check.outputs.saved-release-date || 
+      needs.check.outputs.days-since-last-bin-build > 50 ||
       github.event.inputs.force_build == 'yes'
     runs-on: ubuntu-latest
     steps:
