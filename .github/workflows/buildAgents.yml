@@ -24,7 +24,7 @@ jobs:
       last-release-date: ${{ steps.release.outputs.last-release-date }}
       saved-release-date: ${{ steps.saved.outputs.saved-release-date }}
       saved-bin-build-date: ${{ steps.saved.outputs.saved-bin-build-date }}
-      days-since-last-bin-build: ${{ steps.release.outputs.days-since-last-bin-build }}
+      days-since-last-bin-build: ${{ steps.days-since-build.outputs.days-since-last-bin-build }}
       
     steps:
       - name: Checkout
